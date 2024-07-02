@@ -2,7 +2,6 @@ package gift.dao;
 
 import gift.dto.Product;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -14,7 +13,6 @@ public class ProductDAO {
     private final JdbcTemplate jdbcTemplate;
     private final RowMapper<Product> rowMapper = new BeanPropertyRowMapper<>(Product.class);
 
-    @Autowired
     public ProductDAO(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
