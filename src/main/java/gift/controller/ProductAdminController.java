@@ -1,6 +1,6 @@
 package gift.controller;
 
-import gift.dto.Product;
+import gift.entity.Product;
 import gift.service.ProductService;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ public class ProductAdminController {
 
     @PostMapping("/add")
     public String addProduct(@Valid @ModelAttribute Product product, BindingResult bindingResult) {
-        if(bindingResult.hasErrors()){
+        if (bindingResult.hasErrors()) {
             return "product-form";
         }
         productService.saveProduct(product);
@@ -48,16 +48,15 @@ public class ProductAdminController {
 
     @GetMapping("edit/{id}")
     public String updateProductForm(@PathVariable("id") Long id, Model model) {
-        if (productService.getProductById(id) == null) {
-            throw new RuntimeException("해당 id를 가지고있는 Product 객체가 없습니다.");
-        }
+        productService.getProductById(id);
         model.addAttribute("product", productService.getProductById(id));
         return "product-form";
     }
 
     @PostMapping("edit/{id}")
-    public String updateProduct(@PathVariable("id") Long id, @Valid @ModelAttribute Product product, BindingResult bindingResult) {
-        if(bindingResult.hasErrors()){
+    public String updateProduct(@PathVariable("id") Long id, @Valid @ModelAttribute Product product,
+        BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
             return "product-form";
         }
         product.setId(id);
@@ -67,9 +66,7 @@ public class ProductAdminController {
 
     @GetMapping("/delete/{id}")
     public String deleteProduct(@PathVariable("id") Long id) {
-        if (productService.getProductById(id) == null) {
-            throw new RuntimeException("해당 id를 가지고있는 Product 객체가 없습니다.");
-        }
+        productService.getProductById(id);
         productService.deleteProduct(id);
         return "redirect:/admin/products";
     }

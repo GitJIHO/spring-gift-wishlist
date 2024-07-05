@@ -1,31 +1,87 @@
 package gift.exception;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(
-        MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
-        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ProblemDetail> handleValidationExceptions(
+        MethodArgumentNotValidException exception) {
+        ProblemDetail problemDetail = createProblemDetail(exception);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+    private ProblemDetail createProblemDetail(MethodArgumentNotValidException exception) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problemDetail.setTitle("Validation Failed");
+        problemDetail.setDetail("하나 이상의 Validation 문제가 있습니다.");
+
+        BindingResult bindingResult = exception.getBindingResult();
+        List<ErrorDTO> errorDetails = getErrorDTOS(bindingResult);
+
+        problemDetail.setProperty("errors", errorDetails);
+        return problemDetail;
     }
+
+    private static List<ErrorDTO> getErrorDTOS(BindingResult bindingResult) {
+        List<ObjectError> allErrors = bindingResult.getAllErrors();
+        List<ErrorDTO> errorDetails = new ArrayList<>();
+
+        for (ObjectError objectError : allErrors) {
+            if (objectError instanceof FieldError fieldError) {
+                String fieldName = fieldError.getField();
+                String errorMessage = fieldError.getDefaultMessage();
+                ErrorDTO errorDTO = new ErrorDTO(fieldName, errorMessage);
+                errorDetails.add(errorDTO);
+            }
+        }
+        return errorDetails;
+    }
+
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleProductNotFoundException(
+        ProductNotFoundException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND,
+            ex.getMessage());
+        problemDetail.setTitle("Product Not Found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ProblemDetail> handleUnauthorizedException(UnauthorizedException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED,
+            ex.getMessage());
+        problemDetail.setTitle("Unauthorized Access");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
+    }
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<ProblemDetail> handleEmailAlreadyExistsException(
+        EmailAlreadyExistsException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+            ex.getMessage());
+        problemDetail.setTitle("Email Already Exists");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    @ExceptionHandler(UserAuthException.class)
+    public ResponseEntity<ProblemDetail> handleWrongAuthorizedException(
+        UserAuthException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
+            ex.getMessage());
+        problemDetail.setTitle("Wrong authorized Access");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problemDetail);
+    }
+
 }
